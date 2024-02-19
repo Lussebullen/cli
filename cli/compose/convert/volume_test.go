@@ -116,6 +116,22 @@ func TestConvertVolumeToMountConflictingOptionsClusterInVolume(t *testing.T) {
 	assert.Error(t, err, "cluster options are incompatible with type volume")
 }
 
+func TestConvertVolumeToMountConflictingOptionsClusterInBind(t *testing.T) {
+	namespace := NewNamespace("foo")
+
+	config := composetypes.ServiceVolumeConfig{
+		Type:   "bind",
+		Source: "/foo",
+		Target: "/target",
+		Bind: &composetypes.ServiceVolumeBind{
+			Propagation: "slave",
+		},
+		Cluster: &composetypes.ServiceVolumeCluster{},
+	}
+	_, err := convertVolumeToMount(config, volumes{}, namespace)
+	assert.Error(t, err, "cluster options are incompatible with type bind")
+}
+
 func TestConvertVolumeToMountConflictingOptionsBindInTmpfs(t *testing.T) {
 	namespace := NewNamespace("foo")
 
