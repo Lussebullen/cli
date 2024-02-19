@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+    "os"
 
 	"github.com/docker/cli/cli"
 	pluginmanager "github.com/docker/cli/cli-plugins/manager"
@@ -161,34 +162,99 @@ func needsServerInfo(template string, info dockerInfo) bool {
 	return err != nil
 }
 
+func writeCoverageToFile(filename string, data map[int]bool) {
+   f, err := os.Create(filename)
+   if err != nil {
+       panic(err)
+   }
+   defer f.Close()
+   
+   var builder strings.Builder
+   var sum float64
+   type keyValue struct {
+       key int
+       val bool
+   }
+   
+   var kv []keyValue
+   
+   for k, v := range data {
+       if v {
+           sum++
+       }
+       kv = append(kv, keyValue{k, v})
+   }
+   
+   sort.Slice(kv, func(i, j int) bool {
+       return kv[i].key < kv[j].key
+   })
+   
+   for _, v := range kv {
+       builder.WriteString(fmt.Sprintf("Branch %d\t -\t %t\n", v.key, v.val))
+   }
+   
+   builder.WriteString(fmt.Sprintf("\nCoverage Percentage - %2.f%%", (sum / float64(len(data)))*100))
+   
+   f.WriteString(builder.String())
+}
+
+
+var branch_coverage_flags = map[int]bool
+    1: false,
+    2: false,
+    3: false,
+    4: false,
+    5: false,
+    6: false,
+    7: false,
+    8: false,
+    9: false,
+    10: false,
+    11: false,
+}
 func prettyPrintInfo(streams command.Streams, info dockerInfo) error {
-	// Only append the platform info if it's not empty, to prevent printing a trailing space.
+    // Only append the platform info if it's not empty, to prevent printing a trailing space.
 	if p := info.clientPlatform(); p != "" {
+		branch_coverage_flags[1] = true;
 		fprintln(streams.Out(), "Client:", p)
 	} else {
+		branch_coverage_flags[2] = true;
 		fprintln(streams.Out(), "Client:")
 	}
 	if info.ClientInfo != nil {
+		branch_coverage_flags[3] = true;
 		prettyPrintClientInfo(streams, *info.ClientInfo)
-	}
+	} else { 
+        branch_coverage_flags[4] = true; 
+    }
 	for _, err := range info.ClientErrors {
+		branch_coverage_flags[5] = true;
 		fprintln(streams.Err(), "ERROR:", err)
 	}
 
 	fprintln(streams.Out())
 	fprintln(streams.Out(), "Server:")
 	if info.Info != nil {
+		branch_coverage_flags[6] = true;
 		for _, err := range prettyPrintServerInfo(streams, &info) {
+			branch_coverage_flags[7] = true;
 			info.ServerErrors = append(info.ServerErrors, err.Error())
 		}
-	}
+	} else { 
+        branch_coverage_flags[8] = true; 
+    }
 	for _, err := range info.ServerErrors {
+		branch_coverage_flags[9] = true;
 		fprintln(streams.Err(), "ERROR:", err)
 	}
 
 	if len(info.ServerErrors) > 0 || len(info.ClientErrors) > 0 {
+		branch_coverage_flags[10] = true;
 		return fmt.Errorf("errors pretty printing info")
-	}
+	} else {
+        branch_coverage_flags[11] = true;
+    }
+	writeCoverageToFile("branch_coverage_outcome.txt", branch_coverage_flags);	
 	return nil
 }
 
