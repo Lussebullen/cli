@@ -5,6 +5,7 @@ package template
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -141,40 +142,94 @@ type extractedValue struct {
 	value string
 }
 
+var extractVariablesCoverage = map[int]bool{
+	1: false,
+	2: false,
+	3: false,
+	4: false,
+	5: false,
+	6: false,
+	7: false,
+	8: false,
+	9: false,
+	10: false,
+	11: false,
+	12: false,
+}
 func extractVariable(value any, pattern *regexp.Regexp) ([]extractedValue, bool) {
 	sValue, ok := value.(string)
 	if !ok {
+		extractVariablesCoverage[1] = true
+		//extractVariablesCoverage["ofif"] = true 
 		return []extractedValue{}, false
+	} else  {
+		extractVariablesCoverage[2] = true
 	}
 	matches := pattern.FindAllStringSubmatch(sValue, -1)
 	if len(matches) == 0 {
+		extractVariablesCoverage[3] = true
 		return []extractedValue{}, false
+	} else {
+		extractVariablesCoverage[4] = true
 	}
 	values := []extractedValue{}
 	for _, match := range matches {
 		groups := matchGroups(match, pattern)
 		if escaped := groups["escaped"]; escaped != "" {
+			extractVariablesCoverage[5] = true
 			continue
-		}
+		} else {
+			extractVariablesCoverage[6] = true}
 		val := groups["named"]
 		if val == "" {
+			extractVariablesCoverage[7] = true
 			val = groups["braced"]
+		} else {
+			extractVariablesCoverage[8] = true
 		}
 		name := val
 		var defaultValue string
 		switch {
 		case strings.Contains(val, ":?"):
+			extractVariablesCoverage[9] = true
 			name, _ = partition(val, ":?")
 		case strings.Contains(val, "?"):
+			extractVariablesCoverage[10] = true
 			name, _ = partition(val, "?")
 		case strings.Contains(val, ":-"):
+			extractVariablesCoverage[11] = true
 			name, defaultValue = partition(val, ":-")
 		case strings.Contains(val, "-"):
+			extractVariablesCoverage[12] = true
 			name, defaultValue = partition(val, "-")
 		}
 		values = append(values, extractedValue{name: name, value: defaultValue})
 	}
+
+	writeCoverageToFile("extractVariablesCoverage.txt", extractVariablesCoverage)
+
 	return values, len(values) > 0
+}
+
+func writeCoverageToFile(filename string, data map[int]bool) {
+	f, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	var builder strings.Builder
+	var sum int
+	for k, v := range data {
+		if v {
+			sum++
+		}
+		builder.WriteString(fmt.Sprintf("%v - %v\n", k, v))
+	}
+
+	builder.WriteString(fmt.Sprintf("Coverage Percentage - %2.f%%", (float64(sum) / float64(len(data))) * 100 ))
+
+	f.WriteString(builder.String())
 }
 
 // Soft default (fall back if unset or empty)
