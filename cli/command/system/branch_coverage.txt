@@ -1,0 +1,13 @@
+Branch 1	 -	 true
+Branch 2	 -	 true
+Branch 3	 -	 true
+Branch 4	 -	 false
+Branch 5	 -	 false
+Branch 6	 -	 true
+Branch 7	 -	 false
+Branch 8	 -	 false
+Branch 9	 -	 false
+Branch 10	 -	 false
+Branch 11	 -	 true
+
+Coverage Percentage - 45%
