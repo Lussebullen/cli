@@ -352,6 +352,32 @@ func isValidFilePath(p string) error {
 	return nil
 }
 
+func processMetaFile(tr *tar.Reader, s Writer, name string) (bool, error) {
+	data, err := io.ReadAll(tr)
+	if err != nil {
+		return false, err
+	}
+	meta, err := parseMetadata(data, name)
+	if err != nil {
+		return false, err
+	}
+	if err := s.CreateOrUpdate(meta); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func processTlsFile(tr *tar.Reader, tlsData ContextTLSData, name string) error {
+	data, err := io.ReadAll(tr)
+	if err != nil {
+		return err
+	}
+	if err := importEndpointTLS(&tlsData, name, data); err != nil {
+		return err
+	}
+	return nil
+}
+
 func importTar(name string, s Writer, reader io.Reader) error {
 	tr := tar.NewReader(&LimitedReader{R: reader, N: maxAllowedFileSizeToImport})
 	tlsData := ContextTLSData{
@@ -374,26 +400,9 @@ func importTar(name string, s Writer, reader io.Reader) error {
 			return errors.Wrap(err, hdr.Name)
 		}
 		if hdr.Name == metaFile {
-			data, err := io.ReadAll(tr)
-			if err != nil {
-				return err
-			}
-			meta, err := parseMetadata(data, name)
-			if err != nil {
-				return err
-			}
-			if err := s.CreateOrUpdate(meta); err != nil {
-				return err
-			}
-			importedMetaFile = true
+			importedMetaFile, err = processMetaFile(tr, s, name)
 		} else if strings.HasPrefix(hdr.Name, "tls/") {
-			data, err := io.ReadAll(tr)
-			if err != nil {
-				return err
-			}
-			if err := importEndpointTLS(&tlsData, hdr.Name, data); err != nil {
-				return err
-			}
+			err = processTlsFile(tr, tlsData, hdr.Name)
 		}
 	}
 	if !importedMetaFile {

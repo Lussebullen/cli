@@ -141,6 +141,22 @@ type extractedValue struct {
 	value string
 }
 
+func processValue(val string) (name string, defaultValue string) {
+    switch {
+    case strings.Contains(val, ":?"):
+        name, _ = partition(val, ":?")
+    case strings.Contains(val, "?"):
+        name, _ = partition(val, "?")
+    case strings.Contains(val, ":-"):
+        name, defaultValue = partition(val, ":-")
+    case strings.Contains(val, "-"):
+        name, defaultValue = partition(val, "-")
+    default:
+        name = val
+    }
+    return name, defaultValue
+}
+
 func extractVariable(value any, pattern *regexp.Regexp) ([]extractedValue, bool) {
 	sValue, ok := value.(string)
 	if !ok {
@@ -160,18 +176,9 @@ func extractVariable(value any, pattern *regexp.Regexp) ([]extractedValue, bool)
 		if val == "" {
 			val = groups["braced"]
 		}
-		name := val
-		var defaultValue string
-		switch {
-		case strings.Contains(val, ":?"):
-			name, _ = partition(val, ":?")
-		case strings.Contains(val, "?"):
-			name, _ = partition(val, "?")
-		case strings.Contains(val, ":-"):
-			name, defaultValue = partition(val, ":-")
-		case strings.Contains(val, "-"):
-			name, defaultValue = partition(val, "-")
-		}
+		
+		name, defaultValue := processValue(val)
+
 		values = append(values, extractedValue{name: name, value: defaultValue})
 	}
 	return values, len(values) > 0
