@@ -10,11 +10,14 @@ import (
 	"bytes"
 	_ "crypto/sha256" // ensure ids can be computed
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/docker/docker/errdefs"
@@ -352,6 +355,32 @@ func isValidFilePath(p string) error {
 	return nil
 }
 
+var importTarCoverage = map[int]bool{
+	1: false,
+	2: false,
+	3: false,
+	4: false,
+	5: false,
+	6: false,
+	7: false,
+	8: false,
+	9: false,
+	10: false,
+	11: false,
+	12: false,
+	13: false,
+	14: false,
+	15: false,
+	16: false,
+	17: false,
+	18: false,
+	19: false,
+	20: false,
+	21: false,
+	22: false,
+	23: false,
+}
+
 func importTar(name string, s Writer, reader io.Reader) error {
 	tr := tar.NewReader(&LimitedReader{R: reader, N: maxAllowedFileSizeToImport})
 	tlsData := ContextTLSData{
@@ -360,46 +389,119 @@ func importTar(name string, s Writer, reader io.Reader) error {
 	var importedMetaFile bool
 	for {
 		hdr, err := tr.Next()
+		importTarCoverage[1] = true
 		if err == io.EOF {
+			importTarCoverage[1] = true
 			break
+		} else {
+			importTarCoverage[2] = true
 		}
 		if err != nil {
+			importTarCoverage[3] = true
 			return err
+		} else {
+			importTarCoverage[4] = true
 		}
 		if hdr.Typeflag != tar.TypeReg {
+			importTarCoverage[5] = true
 			// skip this entry, only taking files into account
 			continue
+		} else {
+			importTarCoverage[6] = true
 		}
 		if err := isValidFilePath(hdr.Name); err != nil {
+			importTarCoverage[7] = true
 			return errors.Wrap(err, hdr.Name)
+		} else {
+			importTarCoverage[8] = true
 		}
 		if hdr.Name == metaFile {
+			importTarCoverage[9] = true
 			data, err := io.ReadAll(tr)
 			if err != nil {
+				importTarCoverage[10] = true
 				return err
+			} else {
+				importTarCoverage[11] = true
 			}
 			meta, err := parseMetadata(data, name)
 			if err != nil {
+				importTarCoverage[12] = true
 				return err
+			} else {
+				importTarCoverage[13] = true
 			}
 			if err := s.CreateOrUpdate(meta); err != nil {
+				importTarCoverage[14] = true
 				return err
+			} else {
+				importTarCoverage[15] = true
 			}
 			importedMetaFile = true
 		} else if strings.HasPrefix(hdr.Name, "tls/") {
+			importTarCoverage[16] = true
 			data, err := io.ReadAll(tr)
 			if err != nil {
+				importTarCoverage[17] = true
 				return err
+			} else {
+				importTarCoverage[18] = true
 			}
 			if err := importEndpointTLS(&tlsData, hdr.Name, data); err != nil {
+				importTarCoverage[19] = true
 				return err
+			} else {
+				importTarCoverage[20] = true
 			}
+		} else {
+			importTarCoverage[21] = true
 		}
 	}
 	if !importedMetaFile {
+		importTarCoverage[22] = true
 		return errdefs.InvalidParameter(errors.New("invalid context: no metadata found"))
+	} else {
+		importTarCoverage[23] = true
 	}
+
+	writeCoverageToFile("importTarCoverage.txt", importTarCoverage)
+
 	return s.ResetTLSMaterial(name, &tlsData)
+}
+
+func writeCoverageToFile(filename string, data map[int]bool) {
+	f, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	var builder strings.Builder
+	var sum float64
+	type keyValue struct {
+		key int
+		val bool
+	}
+	var kv []keyValue
+
+	for k, v := range data {
+		if v {
+			sum++
+		}
+		kv = append(kv, keyValue{k, v})
+	}
+
+	sort.Slice(kv, func(i, j int) bool {
+		return kv[i].key < kv[j].key
+	})
+
+	for _, v := range kv {
+		builder.WriteString(fmt.Sprintf("Branch %d\t -\t %t\n", v.key, v.val))
+	}
+
+	builder.WriteString(fmt.Sprintf("\nCoverage Percentage - %2.f%%", (sum / float64(len(data)))*100))
+
+	f.WriteString(builder.String())
 }
 
 func importZip(name string, s Writer, reader io.Reader) error {
