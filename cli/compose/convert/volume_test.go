@@ -514,3 +514,16 @@ func TestHandleClusterToMountConflictingOptionsVolumeInCluster(t *testing.T) {
 	_, err := convertVolumeToMount(config, volumes{}, namespace)
 	assert.Error(t, err, "volume options are incompatible with type cluster")
 }
+
+func TestHandleClusterToMountBind(t *testing.T) {
+	namespace := NewNamespace("foo")
+	config := composetypes.ServiceVolumeConfig{
+		Type:     "cluster",
+		Source:   "/bar",
+		Target:   "/foo",
+		ReadOnly: true,
+		Bind:     &composetypes.ServiceVolumeBind{Propagation: "shared"},
+	}
+	_, err := convertVolumeToMount(config, volumes{}, namespace)
+	assert.Error(t, err, "bind options are incompatible with type cluster")
+}
