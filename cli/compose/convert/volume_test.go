@@ -499,3 +499,18 @@ func TestHandleClusterToMountConflictingOptionsTmpfsInCluster(t *testing.T) {
 	_, err := convertVolumeToMount(config, volumes{}, namespace)
 	assert.Error(t, err, "tmpfs options are incompatible with type cluster")
 }
+
+func TestHandleClusterToMountConflictingOptionsVolumeInCluster(t *testing.T) {
+	namespace := NewNamespace("foo")
+
+	config := composetypes.ServiceVolumeConfig{
+		Type:   "cluster",
+		Source: "/foo",
+		Target: "/target",
+		Volume: &composetypes.ServiceVolumeVolume{
+			NoCopy: true,
+		},
+	}
+	_, err := convertVolumeToMount(config, volumes{}, namespace)
+	assert.Error(t, err, "volume options are incompatible with type cluster")
+}
