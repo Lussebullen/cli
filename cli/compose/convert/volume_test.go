@@ -470,3 +470,17 @@ func TestConvertVolumeMountClusterGroup(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Check(t, is.DeepEqual(expected, mnt))
 }
+
+func TestHandleClusterToMountAnonymousCluster(t *testing.T) {
+	namespace := NewNamespace("foo")
+
+	config := composetypes.ServiceVolumeConfig{
+		Type:   "cluster",
+		Target: "/target",
+		Volume: &composetypes.ServiceVolumeVolume{
+			NoCopy: true,
+		},
+	}
+	_, err := convertVolumeToMount(config, volumes{}, namespace)
+	assert.Error(t, err, "invalid cluster source, source cannot be empty")
+}
