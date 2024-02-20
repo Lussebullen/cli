@@ -6,6 +6,7 @@ package template
 import (
 	"fmt"
 	"os"
+	"sort"
 	"regexp"
 	"strings"
 )
@@ -219,15 +220,30 @@ func writeCoverageToFile(filename string, data map[int]bool) {
 	defer f.Close()
 
 	var builder strings.Builder
-	var sum int
+	var sum float64
+	type keyValue struct {
+		key int
+		val bool
+	}
+
+	var kv []keyValue
+
 	for k, v := range data {
 		if v {
 			sum++
 		}
-		builder.WriteString(fmt.Sprintf("%v - %v\n", k, v))
+		kv = append(kv, keyValue{k, v})
 	}
 
-	builder.WriteString(fmt.Sprintf("Coverage Percentage - %2.f%%", (float64(sum) / float64(len(data))) * 100 ))
+	sort.Slice(kv, func(i, j int) bool {
+		return kv[i].key < kv[j].key
+	})
+
+	for _, v := range kv {
+		builder.WriteString(fmt.Sprintf("Branch %d\t -\t %t\n", v.key, v.val))
+	}
+
+	builder.WriteString(fmt.Sprintf("\nCoverage Percentage - %2.f%%", (sum / float64(len(data)))*100))
 
 	f.WriteString(builder.String())
 }
