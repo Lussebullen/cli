@@ -3,6 +3,8 @@ package container
 import (
 	"context"
 	"fmt"
+	"strings"
+	"sort"
 	"io"
 	"os"
 
@@ -147,6 +149,25 @@ func fillConsoleSize(execConfig *types.ExecConfig, dockerCli command.Cli) {
 	}
 }
 
+var interactiveExecCoverage = map[int]bool{
+	1: false,
+	2: false,
+	3: false,
+	4: false,
+	5: false,
+	6: false,
+	7: false,
+	8: false,
+	9: false,
+	10: false,
+	11: false,
+	12: false,
+	13: false,
+	14: false,
+	15: false,
+	16: false,
+}
+
 func interactiveExec(ctx context.Context, dockerCli command.Cli, execConfig *types.ExecConfig, execID string) error {
 	// Interactive exec requested.
 	var (
@@ -155,17 +176,28 @@ func interactiveExec(ctx context.Context, dockerCli command.Cli, execConfig *typ
 	)
 
 	if execConfig.AttachStdin {
+		interactiveExecCoverage[1] = true
 		in = dockerCli.In()
+	} else {
+		interactiveExecCoverage[2] = true
 	}
 	if execConfig.AttachStdout {
+		interactiveExecCoverage[3] = true
 		out = dockerCli.Out()
+	} else {
+		interactiveExecCoverage[4] = true	
 	}
 	if execConfig.AttachStderr {
+		interactiveExecCoverage[5] = true
 		if execConfig.Tty {
+			interactiveExecCoverage[6] = true
 			stderr = dockerCli.Out()
 		} else {
+			interactiveExecCoverage[7] = true
 			stderr = dockerCli.Err()
 		}
+	} else {
+		interactiveExecCoverage[8] = true
 	}
 	fillConsoleSize(execConfig, dockerCli)
 
@@ -176,7 +208,10 @@ func interactiveExec(ctx context.Context, dockerCli command.Cli, execConfig *typ
 	}
 	resp, err := client.ContainerExecAttach(ctx, execID, execStartCheck)
 	if err != nil {
+		interactiveExecCoverage[9] = true
 		return err
+	} else {
+		interactiveExecCoverage[10] = true
 	}
 	defer resp.Close()
 
@@ -200,17 +235,64 @@ func interactiveExec(ctx context.Context, dockerCli command.Cli, execConfig *typ
 	}()
 
 	if execConfig.Tty && dockerCli.In().IsTerminal() {
+		interactiveExecCoverage[11] = true
 		if err := MonitorTtySize(ctx, dockerCli, execID, true); err != nil {
+			interactiveExecCoverage[12] = true
 			fmt.Fprintln(dockerCli.Err(), "Error monitoring TTY size:", err)
+		} else {
+			interactiveExecCoverage[13] = true
 		}
+	} else {
+		interactiveExecCoverage[14] = true
 	}
 
 	if err := <-errCh; err != nil {
+		interactiveExecCoverage[15] = true
 		logrus.Debugf("Error hijack: %s", err)
 		return err
+	} else {
+		interactiveExecCoverage[16] = true
 	}
 
+	writeCoverageToFile("interactiveExecCoverage.txt", interactiveExecCoverage)
+
 	return getExecExitStatus(ctx, client, execID)
+}
+
+func writeCoverageToFile(filename string, data map[int]bool) {
+	f, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	var builder strings.Builder
+	var sum float64
+	type keyValue struct {
+		key int
+		val bool
+	}
+
+	var kv []keyValue
+
+	for k, v := range data {
+		if v {
+			sum++
+		}
+		kv = append(kv, keyValue{k, v})
+	}
+
+	sort.Slice(kv, func(i, j int) bool {
+		return kv[i].key < kv[j].key
+	})
+
+	for _, v := range kv {
+		builder.WriteString(fmt.Sprintf("Branch %d\t -\t %t\n", v.key, v.val))
+	}
+
+	builder.WriteString(fmt.Sprintf("\nCoverage Percentage - %2.f%%", (sum / float64(len(data)))*100))
+
+	f.WriteString(builder.String())
 }
 
 func getExecExitStatus(ctx context.Context, client apiclient.ContainerAPIClient, execID string) error {
