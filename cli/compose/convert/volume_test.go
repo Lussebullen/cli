@@ -484,3 +484,18 @@ func TestHandleClusterToMountAnonymousCluster(t *testing.T) {
 	_, err := convertVolumeToMount(config, volumes{}, namespace)
 	assert.Error(t, err, "invalid cluster source, source cannot be empty")
 }
+
+func TestHandleClusterToMountConflictingOptionsTmpfsInCluster(t *testing.T) {
+	namespace := NewNamespace("foo")
+
+	config := composetypes.ServiceVolumeConfig{
+		Type:   "cluster",
+		Source: "/foo",
+		Target: "/target",
+		Tmpfs: &composetypes.ServiceVolumeTmpfs{
+			Size: 1000,
+		},
+	}
+	_, err := convertVolumeToMount(config, volumes{}, namespace)
+	assert.Error(t, err, "tmpfs options are incompatible with type cluster")
+}
