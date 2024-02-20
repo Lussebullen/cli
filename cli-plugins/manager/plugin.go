@@ -2,12 +2,12 @@ package manager
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
-        "os"
-        "fmt"
-        "sort"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -28,69 +28,71 @@ type Plugin struct {
 	// ShadowedPaths contains the paths of any other plugins which this plugin takes precedence over.
 	ShadowedPaths []string `json:",omitempty"`
 }
+
 func writeCoverageToFile(filename string, data map[int]bool) {
-    f, err := os.Create(filename)
-    if err != nil {
-        panic(err)
-    }
-    defer f.Close()
-    
-    var builder strings.Builder
-    var sum float64
-    type keyValue struct {
-        key int
-        val bool
-    }
-    
-    var kv []keyValue
-    
-    for k, v := range data {
-        if v {
-            sum++
-        }
-        kv = append(kv, keyValue{k, v})
-    }
-    
-    sort.Slice(kv, func(i, j int) bool {
-        return kv[i].key < kv[j].key
-    })
-    
-    for _, v := range kv {
-        builder.WriteString(fmt.Sprintf("Branch %d\t -\t %t\n", v.key, v.val))
-    }
-    
-    builder.WriteString(fmt.Sprintf("\nCoverage Percentage - %2.f%%", (sum / float64(len(data)))*100))
-    
-    f.WriteString(builder.String())
+	f, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	var builder strings.Builder
+	var sum float64
+	type keyValue struct {
+		key int
+		val bool
+	}
+
+	var kv []keyValue
+
+	for k, v := range data {
+		if v {
+			sum++
+		}
+		kv = append(kv, keyValue{k, v})
+	}
+
+	sort.Slice(kv, func(i, j int) bool {
+		return kv[i].key < kv[j].key
+	})
+
+	for _, v := range kv {
+		builder.WriteString(fmt.Sprintf("Branch %d\t -\t %t\n", v.key, v.val))
+	}
+
+	builder.WriteString(fmt.Sprintf("\nCoverage Percentage - %2.f%%", (sum/float64(len(data)))*100))
+
+	f.WriteString(builder.String())
 }
 
-var branch_coverage_flags = map[int]bool {
-    1:  false,
-    2:  false,
-    3:  false,
-    4:  false,
-    5:  false,
-    6:  false,
-    7:  false,
-    8:  false,
-    9:  false,
-    10: false,
-    11: false,
-    12: false,
-    13: false,
-    14: false,
-    15: false,
-    16: false,
-    17: false,
-    18: false,
-    19: false,
-    20: false,
-    21: false,
-    22: false,
-    23: false,
-    24: false,
-    25: false,
+var branch_coverage_flags = map[int]bool{
+	1:  false,
+	2:  false,
+	3:  false,
+	4:  false,
+	5:  false,
+	6:  false,
+	7:  false,
+	8:  false,
+	9:  false,
+	10: false,
+	11: false,
+	12: false,
+	13: false,
+	14: false,
+	15: false,
+	16: false,
+	17: false,
+	18: false,
+	19: false,
+	20: false,
+	21: false,
+	22: false,
+	23: false,
+	24: false,
+	25: false,
 }
+
 // newPlugin determines if the given candidate is valid and returns a
 // Plugin.  If the candidate fails one of the tests then `Plugin.Err`
 // is set, and is always a `pluginError`, but the `Plugin` is still
