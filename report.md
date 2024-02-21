@@ -397,7 +397,8 @@ func importTar(name string, s Writer, reader io.Reader) error {
 This reduces the CCN of importTar from 14 to 9, ie. ~36% reduction.
 ## interactiveExec 
 
-```func interactiveExec(ctx context.Context, dockerCli command.Cli, execConfig *types.ExecConfig, execID string) error {
+```go
+func interactiveExec(ctx context.Context, dockerCli command.Cli, execConfig *types.ExecConfig, execID string) error {
     // Interactive exec requested.
     var (
    	 out, stderr io.Writer
@@ -466,7 +467,8 @@ This reduces the CCN of importTar from 14 to 9, ie. ~36% reduction.
 
 We can reduce the complexity of this function by moving the if and if-else statements in the beginning pertaining to IO to a helper function. 
 
-```func prepareStreams(dockerCli command.Cli, execConfig *types.ExecConfig) (io.ReadCloser, io.Writer, io.Writer) {
+```go
+func prepareStreams(dockerCli command.Cli, execConfig *types.ExecConfig) (io.ReadCloser, io.Writer, io.Writer) {
 	var (
 		in     io.ReadCloser
 		out    io.Writer
@@ -491,7 +493,7 @@ We can reduce the complexity of this function by moving the if and if-else state
 }
 ```
 The new interactiveExec function would look like this:
-```
+```go
 func interactiveExec(ctx context.Context, dockerCli command.Cli, execConfig *types.ExecConfig, execID string) error {
     // Interactive exec requested.
     in, out, stderr := prepareStreams(dockerCli, execConfig)
