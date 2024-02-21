@@ -161,7 +161,7 @@ func needsServerInfo(template string, info dockerInfo) bool {
 	return err != nil
 }
 
-func prettyPrintInfo(streams command.Streams, info dockerInfo) error {
+func prettyPrintClient(streams command.Streams, info dockerInfo) error {
 	// Only append the platform info if it's not empty, to prevent printing a trailing space.
 	if p := info.clientPlatform(); p != "" {
 		fprintln(streams.Out(), "Client:", p)
@@ -174,7 +174,10 @@ func prettyPrintInfo(streams command.Streams, info dockerInfo) error {
 	for _, err := range info.ClientErrors {
 		fprintln(streams.Err(), "ERROR:", err)
 	}
+	return nil
+}
 
+func prettyPrintServer(streams command.Streams, info dockerInfo) error {
 	fprintln(streams.Out())
 	fprintln(streams.Out(), "Server:")
 	if info.Info != nil {
@@ -190,6 +193,13 @@ func prettyPrintInfo(streams command.Streams, info dockerInfo) error {
 		return fmt.Errorf("errors pretty printing info")
 	}
 	return nil
+}
+
+func prettyPrintInfo(streams command.Streams, info dockerInfo) error {
+
+	prettyPrintClient(streams, info)
+	return prettyPrintServer(streams, info)
+
 }
 
 func prettyPrintClientInfo(streams command.Streams, info clientInfo) {
