@@ -466,14 +466,14 @@ func TestParseLink(t *testing.T) {
 	}
 }
 
-func TestGetAllOrEmpty(t *testing.T) {
+func TestGetAllOrEmptyReturnsNilOrValue(t *testing.T) {
 	opts := NewListOpts(nil)
 	assert.Check(t, is.DeepEqual(opts.GetAllOrEmpty(), []string{}))
 	opts.Set("foo")
 	assert.Check(t, is.DeepEqual(opts.GetAllOrEmpty(), []string{"foo"}))
 }
 
-func TestParseCPUs(t *testing.T) {
+func TestParseCPUsReturnZeroOnInvalidValues(t *testing.T) {
 	resValue, _ := ParseCPUs("foo")
 	var z1 int64 = 0
 	assert.Equal(t, z1, resValue)

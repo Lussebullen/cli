@@ -136,7 +136,7 @@ func TestNetworkOptAdvancedSyntaxInvalid(t *testing.T) {
 	}
 }
 
-func TestNetworkOptString(t *testing.T) {
+func TestNetworkOptStringNetOptString(t *testing.T) {
 	networkOpt := &NetworkOpt{}
 	result := networkOpt.String()
 	assert.Check(t, is.Equal("", result))
@@ -145,7 +145,7 @@ func TestNetworkOptString(t *testing.T) {
 	}
 }
 
-func TestNetworkOptType(t *testing.T) {
+func TestNetworkOptTypeNetOptType(t *testing.T) {
 	networkOpt := &NetworkOpt{}
 	result := networkOpt.Type()
 	assert.Check(t, is.Equal("network", result))
