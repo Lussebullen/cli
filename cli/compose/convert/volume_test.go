@@ -9,6 +9,55 @@ import (
 	is "gotest.tools/v3/assert/cmp"
 )
 
+func TestVolumesWithMultipleServiceVolumeConfigs(t *testing.T) {
+	namespace := NewNamespace("foo")
+
+	serviceVolumes := []composetypes.ServiceVolumeConfig{
+		{
+			Type:   "volume",
+			Target: "/foo",
+		},
+		{
+			Type:   "volume",
+			Target: "/foo/bar",
+		},
+	}
+
+	expected := []mount.Mount{
+		{
+			Type:   "volume",
+			Target: "/foo",
+		},
+		{
+			Type:   "volume",
+			Target: "/foo/bar",
+		},
+	}
+
+	mnt, err := Volumes(serviceVolumes, volumes{}, namespace)
+	assert.NilError(t, err)
+	assert.Check(t, is.DeepEqual(expected, mnt))
+}
+
+func TestVolumesWithMultipleServiceVolumeConfigsWithUndefinedVolumeConfig(t *testing.T) {
+	namespace := NewNamespace("foo")
+
+	serviceVolumes := []composetypes.ServiceVolumeConfig{
+		{
+			Type:   "volume",
+			Source: "foo",
+			Target: "/foo",
+		},
+		{
+			Type:   "volume",
+			Target: "/foo/bar",
+		},
+	}
+
+	_, err := Volumes(serviceVolumes, volumes{}, namespace)
+	assert.Error(t, err, "undefined volume \"foo\"")
+}
+
 func TestConvertVolumeToMountAnonymousVolume(t *testing.T) {
 	config := composetypes.ServiceVolumeConfig{
 		Type:   "volume",
@@ -108,8 +157,8 @@ func TestConvertVolumeToMountConflictingOptionsClusterInVolume(t *testing.T) {
 	namespace := NewNamespace("foo")
 
 	config := composetypes.ServiceVolumeConfig{
-		Type:   "volume",
-		Target: "/target",
+		Type:    "volume",
+		Target:  "/target",
 		Cluster: &composetypes.ServiceVolumeCluster{},
 	}
 	_, err := convertVolumeToMount(config, volumes{}, namespace)
@@ -578,6 +627,44 @@ func TestHandleClusterToMountConflictingOptionsVolumeInCluster(t *testing.T) {
 	}
 	_, err := convertVolumeToMount(config, volumes{}, namespace)
 	assert.Error(t, err, "volume options are incompatible with type cluster")
+}
+
+func TestHandleClusterToMountWithUndefinedVolumeConfig(t *testing.T) {
+	namespace := NewNamespace("foo")
+
+	config := composetypes.ServiceVolumeConfig{
+		Type:   "cluster",
+		Source: "foo",
+		Target: "/srv",
+	}
+
+	_, err := convertVolumeToMount(config, volumes{}, namespace)
+	assert.Error(t, err, "undefined volume \"foo\"")
+}
+
+func TestHandleClusterToMountWithVolumeConfigName(t *testing.T) {
+	stackVolumes := volumes{
+		"foo": composetypes.VolumeConfig{
+			Name: "bar",
+		},
+	}
+
+	config := composetypes.ServiceVolumeConfig{
+		Type:   "cluster",
+		Source: "foo",
+		Target: "/srv",
+	}
+
+	expected := mount.Mount{
+		Type:           mount.TypeCluster,
+		Source:         "bar",
+		Target:         "/srv",
+		ClusterOptions: &mount.ClusterOptions{},
+	}
+
+	mnt, err := convertVolumeToMount(config, stackVolumes, NewNamespace("foo"))
+	assert.NilError(t, err)
+	assert.Check(t, is.DeepEqual(expected, mnt))
 }
 
 func TestHandleClusterToMountBind(t *testing.T) {
