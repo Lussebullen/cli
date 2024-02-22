@@ -39,7 +39,7 @@ Create and run a new container from an image
 | `--device-read-iops`                                  | `list`        |           | Limit read rate (IO per second) from a device                                                                                                                                                                                                                                                                    |
 | `--device-write-bps`                                  | `list`        |           | Limit write rate (bytes per second) to a device                                                                                                                                                                                                                                                                  |
 | `--device-write-iops`                                 | `list`        |           | Limit write rate (IO per second) to a device                                                                                                                                                                                                                                                                     |
-| `--disable-content-trust`                             |               |           | Skip image verification                                                                                                                                                                                                                                                                                          |
+| `--disable-content-trust`                             | `bool`        | `true`    | Skip image verification                                                                                                                                                                                                                                                                                          |
 | `--dns`                                               | `list`        |           | Set custom DNS servers                                                                                                                                                                                                                                                                                           |
 | `--dns-option`                                        | `list`        |           | Set DNS options                                                                                                                                                                                                                                                                                                  |
 | `--dns-search`                                        | `list`        |           | Set custom DNS search domains                                                                                                                                                                                                                                                                                    |
@@ -99,7 +99,7 @@ Create and run a new container from an image
 | `--runtime`                                           | `string`      |           | Runtime to use for this container                                                                                                                                                                                                                                                                                |
 | [`--security-opt`](#security-opt)                     | `list`        |           | Security Options                                                                                                                                                                                                                                                                                                 |
 | `--shm-size`                                          | `bytes`       | `0`       | Size of /dev/shm                                                                                                                                                                                                                                                                                                 |
-| `--sig-proxy`                                         |               |           | Proxy received signals to the process                                                                                                                                                                                                                                                                            |
+| `--sig-proxy`                                         | `bool`        | `true`    | Proxy received signals to the process                                                                                                                                                                                                                                                                            |
 | [`--stop-signal`](#stop-signal)                       | `string`      |           | Signal to stop the container                                                                                                                                                                                                                                                                                     |
 | [`--stop-timeout`](#stop-timeout)                     | `int`         | `0`       | Timeout (in seconds) to stop a container                                                                                                                                                                                                                                                                         |
 | [`--storage-opt`](#storage-opt)                       | `list`        |           | Storage driver options for the container                                                                                                                                                                                                                                                                         |
@@ -787,7 +787,7 @@ the following:
 
 These `a`, `ctrl-a`, `X`, or `ctrl-\\` values are all examples of valid key
 sequences. To configure a different configuration default key sequence for all
-containers, see [**Configuration file** section](cli.md#configuration-files).
+containers, see [**Configuration file** section](https://docs.docker.com/engine/reference/commandline/cli/#configuration-files).
 
 ### <a name="device"></a> Add host device to container (--device)
 
@@ -888,7 +888,7 @@ This starts an `ubuntu` container with access to the specified CDI device,
   on the system running the daemon, in one of the configured CDI specification
   directories.
 - The CDI feature has been enabled on the daemon side, see [Enable CDI
-  devices](dockerd.md#enable-cdi-devices).
+  devices](https://docs.docker.com/reference/cli/dockerd/#enable-cdi-devices).
 
 ### <a name="attach"></a> Attach to STDIN/STDOUT/STDERR (-a, --attach)
 
@@ -1306,7 +1306,7 @@ container to exit. This signal can be a signal name in the format `SIG<NAME>`,
 for instance `SIGKILL`, or an unsigned number that matches a position in the
 kernel's syscall table, for instance `9`.
 
-The default value is defined by [`STOPSIGNAL`](https://docs.docker.com/engine/reference/builder/#stopsignal)
+The default value is defined by [`STOPSIGNAL`](https://docs.docker.com/reference/dockerfile/#stopsignal)
 in the image, or `SIGTERM` if the image has no `STOPSIGNAL` defined.
 
 ### <a name="security-opt"></a> Optional security options (--security-opt)

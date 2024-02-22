@@ -37,7 +37,7 @@ Create a new container
 | `--device-read-iops`      | `list`        |           | Limit read rate (IO per second) from a device                                                                                                                                                                                                                                                                    |
 | `--device-write-bps`      | `list`        |           | Limit write rate (bytes per second) to a device                                                                                                                                                                                                                                                                  |
 | `--device-write-iops`     | `list`        |           | Limit write rate (IO per second) to a device                                                                                                                                                                                                                                                                     |
-| `--disable-content-trust` |               |           | Skip image verification                                                                                                                                                                                                                                                                                          |
+| `--disable-content-trust` | `bool`        | `true`    | Skip image verification                                                                                                                                                                                                                                                                                          |
 | `--dns`                   | `list`        |           | Set custom DNS servers                                                                                                                                                                                                                                                                                           |
 | `--dns-option`            | `list`        |           | Set DNS options                                                                                                                                                                                                                                                                                                  |
 | `--dns-search`            | `list`        |           | Set custom DNS search domains                                                                                                                                                                                                                                                                                    |
@@ -131,8 +131,8 @@ so that it's ready to start when you need it. The initial status of the
 new container is `created`.
 
 The `docker create` command shares most of its options with the `docker run`
-command (which performs a `docker create` before starting it). Refer to the
-[`docker run` command](run.md) section and the [Docker run reference](../run.md)
+command (which performs a `docker create` before starting it).
+Refer to the [`docker run` CLI reference](container_run.md)
 for details on the available flags and options.
 
 ## Examples

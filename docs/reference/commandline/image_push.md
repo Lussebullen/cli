@@ -9,11 +9,11 @@ Upload an image to a registry
 
 ### Options
 
-| Name                                         | Type | Default | Description                                 |
-|:---------------------------------------------|:-----|:--------|:--------------------------------------------|
-| [`-a`](#all-tags), [`--all-tags`](#all-tags) |      |         | Push all tags of an image to the repository |
-| `--disable-content-trust`                    |      |         | Skip image signing                          |
-| `-q`, `--quiet`                              |      |         | Suppress verbose output                     |
+| Name                                         | Type   | Default | Description                                 |
+|:---------------------------------------------|:-------|:--------|:--------------------------------------------|
+| [`-a`](#all-tags), [`--all-tags`](#all-tags) |        |         | Push all tags of an image to the repository |
+| `--disable-content-trust`                    | `bool` | `true`  | Skip image signing                          |
+| `-q`, `--quiet`                              |        |         | Suppress verbose output                     |
 
 
 <!---MARKER_GEN_END-->
@@ -40,7 +40,7 @@ Registry credentials are managed by [docker login](login.md).
 By default the Docker daemon will push five layers of an image at a time.
 If you are on a low bandwidth connection this may cause timeout issues and you may want to lower
 this via the `--max-concurrent-uploads` daemon option. See the
-[daemon documentation](dockerd.md) for more details.
+[daemon documentation](https://docs.docker.com/reference/cli/dockerd/) for more details.
 
 ## Examples
 
