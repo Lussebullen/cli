@@ -26,6 +26,47 @@ type Plugin struct {
 	ShadowedPaths []string `json:",omitempty"`
 }
 
+func checkMetadata(c Candidate, p Plugin) (Plugin, error) {
+	meta, err := c.Metadata()
+	if err != nil {
+		p.Err = wrapAsPluginError(err, "failed to fetch metadata")
+		return p, nil
+	}
+
+	if err := json.Unmarshal(meta, &p.Metadata); err != nil {
+		p.Err = wrapAsPluginError(err, "invalid metadata")
+		return p, nil
+	}
+	if p.Metadata.SchemaVersion != "0.1.0" {
+		p.Err = NewPluginError("plugin SchemaVersion %q is not valid, must be 0.1.0", p.Metadata.SchemaVersion)
+		return p, nil
+	}
+	if p.Metadata.Vendor == "" {
+		p.Err = NewPluginError("plugin metadata does not define a vendor")
+		return p, nil
+	}
+	return p, nil
+}
+
+func checkCommand(cmds []*cobra.Command, p Plugin) (Plugin, error) {
+	for _, cmd := range cmds {
+		// Ignore conflicts with commands which are
+		// just plugin stubs (i.e. from a previous
+		// call to AddPluginCommandStubs).
+		if IsPluginCommand(cmd) {
+			continue
+		}
+		if cmd.Name() == p.Name {
+			p.Err = NewPluginError("plugin %q duplicates builtin command", p.Name)
+			return p, nil
+		}
+		if cmd.HasAlias(p.Name) {
+			p.Err = NewPluginError("plugin %q duplicates an alias of builtin command %q", p.Name, cmd.Name())
+			return p, nil
+		}
+	}
+	return p, nil
+}
 // newPlugin determines if the given candidate is valid and returns a
 // Plugin.  If the candidate fails one of the tests then `Plugin.Err`
 // is set, and is always a `pluginError`, but the `Plugin` is still
@@ -62,41 +103,12 @@ func newPlugin(c Candidate, cmds []*cobra.Command) (Plugin, error) {
 		return p, nil
 	}
 
-	for _, cmd := range cmds {
-		// Ignore conflicts with commands which are
-		// just plugin stubs (i.e. from a previous
-		// call to AddPluginCommandStubs).
-		if IsPluginCommand(cmd) {
-			continue
-		}
-		if cmd.Name() == p.Name {
-			p.Err = NewPluginError("plugin %q duplicates builtin command", p.Name)
-			return p, nil
-		}
-		if cmd.HasAlias(p.Name) {
-			p.Err = NewPluginError("plugin %q duplicates an alias of builtin command %q", p.Name, cmd.Name())
-			return p, nil
-		}
-	}
+	p, err = checkCommand(cmds, p)
 
 	// We are supposed to check for relevant execute permissions here. Instead we rely on an attempt to execute.
-	meta, err := c.Metadata()
+	p, err = checkMetadata(c, p)
 	if err != nil {
-		p.Err = wrapAsPluginError(err, "failed to fetch metadata")
 		return p, nil
 	}
-
-	if err := json.Unmarshal(meta, &p.Metadata); err != nil {
-		p.Err = wrapAsPluginError(err, "invalid metadata")
-		return p, nil
-	}
-	if p.Metadata.SchemaVersion != "0.1.0" {
-		p.Err = NewPluginError("plugin SchemaVersion %q is not valid, must be 0.1.0", p.Metadata.SchemaVersion)
-		return p, nil
-	}
-	if p.Metadata.Vendor == "" {
-		p.Err = NewPluginError("plugin metadata does not define a vendor")
-		return p, nil
-	}
-	return p, nil
+	return p, err
 }
