@@ -147,11 +147,11 @@ func fillConsoleSize(execConfig *types.ExecConfig, dockerCli command.Cli) {
 	}
 }
 
-func interactiveExec(ctx context.Context, dockerCli command.Cli, execConfig *types.ExecConfig, execID string) error {
-	// Interactive exec requested.
+func prepareStreams(dockerCli command.Cli, execConfig *types.ExecConfig) (io.ReadCloser, io.Writer, io.Writer) {
 	var (
-		out, stderr io.Writer
-		in          io.ReadCloser
+		in     io.ReadCloser
+		out    io.Writer
+		stderr io.Writer
 	)
 
 	if execConfig.AttachStdin {
@@ -167,50 +167,58 @@ func interactiveExec(ctx context.Context, dockerCli command.Cli, execConfig *typ
 			stderr = dockerCli.Err()
 		}
 	}
-	fillConsoleSize(execConfig, dockerCli)
 
-	client := dockerCli.Client()
-	execStartCheck := types.ExecStartCheck{
-		Tty:         execConfig.Tty,
-		ConsoleSize: execConfig.ConsoleSize,
-	}
-	resp, err := client.ContainerExecAttach(ctx, execID, execStartCheck)
-	if err != nil {
-		return err
-	}
-	defer resp.Close()
+	return in, out, stderr
+}
 
-	errCh := make(chan error, 1)
+func interactiveExec(ctx context.Context, dockerCli command.Cli, execConfig *types.ExecConfig, execID string) error {
+    // Interactive exec requested.
+    in, out, stderr := prepareStreams(dockerCli, execConfig)
 
-	go func() {
-		defer close(errCh)
-		errCh <- func() error {
-			streamer := hijackedIOStreamer{
-				streams:      dockerCli,
-				inputStream:  in,
-				outputStream: out,
-				errorStream:  stderr,
-				resp:         resp,
-				tty:          execConfig.Tty,
-				detachKeys:   execConfig.DetachKeys,
-			}
+    fillConsoleSize(execConfig, dockerCli)
 
-			return streamer.stream(ctx)
-		}()
-	}()
+    client := dockerCli.Client()
+    execStartCheck := types.ExecStartCheck{
+   	 Tty:     	execConfig.Tty,
+   	 ConsoleSize: execConfig.ConsoleSize,
+    }
+    resp, err := client.ContainerExecAttach(ctx, execID, execStartCheck)
+    if err != nil {
+   	 return err
+    }
+    defer resp.Close()
 
-	if execConfig.Tty && dockerCli.In().IsTerminal() {
-		if err := MonitorTtySize(ctx, dockerCli, execID, true); err != nil {
-			fmt.Fprintln(dockerCli.Err(), "Error monitoring TTY size:", err)
-		}
-	}
+    errCh := make(chan error, 1)
 
-	if err := <-errCh; err != nil {
-		logrus.Debugf("Error hijack: %s", err)
-		return err
-	}
+    go func() {
+   	 defer close(errCh)
+   	 errCh <- func() error {
+   		 streamer := hijackedIOStreamer{
+   			 streams:  	dockerCli,
+   			 inputStream:  in,
+   			 outputStream: out,
+   			 errorStream:  stderr,
+   			 resp:     	resp,
+   			 tty:      	execConfig.Tty,
+   			 detachKeys:   execConfig.DetachKeys,
+   		 }
 
-	return getExecExitStatus(ctx, client, execID)
+   		 return streamer.stream(ctx)
+   	 }()
+    }()
+
+    if execConfig.Tty && dockerCli.In().IsTerminal() {
+   	 if err := MonitorTtySize(ctx, dockerCli, execID, true); err != nil {
+   		 fmt.Fprintln(dockerCli.Err(), "Error monitoring TTY size:", err)
+   	 }
+    }
+
+    if err := <-errCh; err != nil {
+   	 logrus.Debugf("Error hijack: %s", err)
+   	 return err
+    }
+
+    return getExecExitStatus(ctx, client, execID)
 }
 
 func getExecExitStatus(ctx context.Context, client apiclient.ContainerAPIClient, execID string) error {
